@@ -2,7 +2,7 @@
 title: "Class 6: R functions"
 author: Xueran Zou
 data: 2023-04-21
-format: pdf
+format: gfm
 ---
 
 Develop our own R function to calculate average grades in a fictional class.
