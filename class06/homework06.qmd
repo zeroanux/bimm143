@@ -1,0 +1,123 @@
+---
+title: "homework06"
+author: "Xueran Zou"
+date: 2023-04-23
+format: pdf
+editor: visual
+---
+
+## A. Improve the analysis code below.
+
+```{r}
+df <- data.frame(a=1:10, b=seq(200,400,length=10),c=11:20,d=NA) 
+df$a <- (df$a - min(df$a)) / (max(df$a) - min(df$a))
+df$b <- (df$b - min(df$a)) / (max(df$b) - min(df$b))
+df$c <- (df$c - min(df$c)) / (max(df$c) - min(df$c))
+df$d <- (df$d - min(df$d)) / (max(df$a) - min(df$d)) 
+```
+
+Write the function.
+
+```{r}
+function_1 = function(x){
+  (x - min(x)) / (max(x) - min(x))
+}
+```
+
+Apply the function:
+
+```{r}
+function_1(df$a)
+```
+
+## B. Improve the below example code for the analysis of protein drug interactions.
+
+```{r}
+library(bio3d)
+```
+
+```{r}
+s1 <- read.pdb("4AKE") # kinase with drug
+s2 <- read.pdb("1AKE") # kinase no drug
+s3 <- read.pdb("1E4Y") # kinase with drug
+s1.chainA <- trim.pdb(s1, chain="A", elety="CA")
+s2.chainA <- trim.pdb(s2, chain="A", elety="CA")
+s3.chainA <- trim.pdb(s1, chain="A", elety="CA")
+s1.b <- s1.chainA$atom$b
+s2.b <- s2.chainA$atom$b
+s3.b <- s3.chainA$atom$b
+plotb3(s1.b, sse=s1.chainA, typ="l", ylab="Bfactor") 
+plotb3(s2.b, sse=s2.chainA, typ="l", ylab="Bfactor") 
+plotb3(s3.b, sse=s3.chainA, typ="l", ylab="Bfactor")
+```
+
+Write the function.
+
+```{r}
+function_2 <- function(x){
+  #input: PDB
+  s <- read.pdb(x)
+  s.chainA <- trim.pdb(s, chain="A", elety="CA")
+  s.b <- s.chainA$atom$b
+  plotb3(s.b, sse=s.chainA, typ="l", ylab="Bfactor")
+  #output: a standard scatter plot with optional secondary structure in the marginal regions
+}
+```
+
+Apply function:
+
+```{r}
+function_2("4AKE")
+```
+
+**Q1. What type of object is returned from the read.pdb() function?**
+
+```{r}
+class(s1)
+```
+
+The type of object returned from the read.pdb() function is large pdb.
+
+**Q2. What does the trim.pdb() function do?**
+
+The function is used to produce a new smaller PDB object, containing a subset of atoms, from a given larger PDB object.
+
+**Q3. What input parameter would turn off the marginal black and grey rectangles in the plots and what do they represent in this case?**
+
+```{r}
+s1 <- read.pdb("4AKE")
+s1.chainA <- trim.pdb(s1, chain="A", elety="CA")
+function_2("4AKE")
+plotb3(s1.b, sse=s1.chainA, typ="l", ylab="Bfactor", top=FALSE, bot=FALSE)
+```
+
+The input parameter "top=FALSE" and "bot=FALSE" would turn off the marginal black and grep rectangles in the plot.
+
+In this case, the black ones represent alpha helices, and the grey ones represent beta strands.
+
+**Q4. What would be a better plot to compare across the different proteins?**
+
+```{r}
+hc <- hclust(dist(rbind(s1.b, s2.b, s3.b)))
+plot(hc)
+```
+
+The difference distance matrix can be a better plot to compare across the different proteins.
+
+**Q5. Which proteins are more similar to each other in their B-factor trends. How could you quantify this?**
+
+```{r}
+hc <- hclust(dist(rbind(s1.b, s2.b, s3.b)))
+plot(hc)
+```
+
+**Q6. How would you generalize the original code above to work with any set of input protein structures?**
+
+```{r}
+function_2 <- function(x){
+  s <- read.pdb(x)
+  s.chainA <- trim.pdb(s, chain="A", elety="CA")
+  s.b <- s.chainA$atom$b
+  plotb3(s.b, sse=s.chainA, typ="l", ylab="Bfactor")
+}
+```
