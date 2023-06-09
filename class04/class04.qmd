@@ -1,0 +1,165 @@
+---
+title: "class04"
+author: "Xueran Zou"
+format: gfm
+editor: visual
+---
+
+## Simple Calculations
+
+```{r}
+2+2
+
+3^2
+
+sqrt(25)
+
+2*(1+1)
+
+2*1+1
+
+exp(1)
+
+log(2.718282)
+
+log(10, base=10)
+
+x=1:50
+plot(x, sin(x))
+plot(x, sin(x), typ="l", col="blue", lwd=3, xlab="x=1:50")
+```
+
+## Object Assignment
+
+```{r}
+x <- 3*4
+x
+
+r_rocks <- 2^3
+r_rocks
+```
+
+## Calling Functions
+
+```{r}
+seq(1,10)
+
+seq(1,10, by=2)
+```
+
+```{r}
+example(seq)
+
+# Some functions don't require arguments
+date()
+```
+
+## Getting Help In R
+
+```{r}
+# help(function)
+# ?function
+# example(function)
+```
+
+## Vectors, Vectorization, and Indexing
+
+```{r}
+length(3.1)
+```
+
+Create longer vectors.
+
+```{r}
+y <- c(56, 95.3, 0.4)
+y
+
+z <- c(3.2, 1.1, 0.2)
+z
+```
+
+All elements of a vector must be the same type.
+
+```{r}
+dbl_var <- c(1, 2.5, 4.5)
+dbl_var
+log_var <- c(TRUE, FALSE, T, F)
+log_var
+chr_var <- c("these are", "some", "strings")
+chr_var
+```
+
+When you attempt to combine different types they will be coerced to be the most flexible type.
+
+```{r}
+var <- c(1, "G", "4", 0.05, TRUE)
+var
+```
+
+Name a vector
+
+```{r}
+m <- c(a=1, b=2, c=3)
+m
+m <- 1:3
+names(m) <- c("a", "b", "c")
+m[c("b", "a")]
+```
+
+Vectorization
+
+```{r}
+y+z
+
+y-z
+
+y/z
+
+sqrt(y)
+
+round(sqrt(y), 3)
+
+log(y)/2 + 1
+```
+
+Vector Indexing
+
+```{r}
+y <- c(56, 95.3, 0.4)
+
+y[2]
+y[1]
+
+y[4]
+
+y[3]<-0.5
+y
+```
+
+## Data Frame
+
+Create with the function data.frame()
+
+```{r}
+dat <- data.frame(id=letters[1:10], x=1:10, y=11:20)
+```
+
+Read delimited files with the functions read.csv(), read.table(), read_xlsx()
+
+```{r}
+df <- read.csv("https://tinyurl.com/UK-foods")
+
+# Show first 6 rows
+head(df)
+# Show last 6 rows
+tail(df)
+
+dim(df)
+nrow(df)
+ncol(df)
+
+rownames(df)
+colnames(df)
+
+str(df)
+```
