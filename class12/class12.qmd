@@ -1,0 +1,254 @@
+---
+title: "class12"
+author: "Xueran Zou"
+format: gfm
+editor: visual
+---
+
+## Import countData and colData
+
+```{r}
+counts <- read.csv('airway_scaledcounts.csv', row.names = 1)
+metadata <- read.csv('airway_metadata.csv')
+View(counts)
+View(metadata)
+```
+
+**Q1.** How many genes are in this dataset?
+
+In this dataset, we have `r nrow(counts)` genes
+
+**Q2.** How many cell lines do we have?
+
+```{r}
+control_cell_lines <- table(metadata$dex)['control']
+```
+
+We have `r control_cell_lines` control cell lines
+
+# Toy differential gene expression
+
+**Q3.** How would you make the above code in either approach more robust?
+
+```{r}
+control <- metadata[metadata[,"dex"]=="control",]
+control.counts <- counts[ ,control$id]
+control.mean <- rowSums( control.counts )/nrow(control) 
+head(control.mean)
+```
+
+**Q4.** Follow the same procedure for the `treated` samples (i.e. calculate the mean per gene across drug treated samples and assign to a labeled vector called `treated.mean`)
+
+```{r}
+treated <- metadata[metadata[,"dex"]=="treated",]
+treated.counts <- counts[ ,treated$id]
+treated.mean <- rowSums( treated.counts )/nrow(treated) 
+head(treated.mean)
+```
+
+```{r}
+meancounts <- data.frame(control.mean, treated.mean)
+```
+
+**Q5 (a).** Create a scatter plot showing the mean of the treated samples against the mean of the control samples. Your plot should look something like the following.
+
+```{r}
+plot(meancounts[,1],meancounts[,2], xlab="Control", ylab="Treated")
+```
+
+**Q5 (b).**You could also use the **ggplot2** package to make this figure producing the plot below. What **geom\_?()** function would you use for this plot?
+
+```{r}
+library(ggplot2)
+
+ggplot(meancounts) + aes(x=control.mean, y=treated.mean) + geom_point()
+```
+
+**Q6.** Try plotting both axes on a log scale. What is the argument to **plot()** that allows you to do this?
+
+```{r}
+ggplot(meancounts) + aes(x=control.mean, y=treated.mean) + geom_point() + scale_x_continuous(trans = "log2") + scale_y_continuous(trans = "log2")
+```
+
+To calculate the log2 of the fold change between treated and control
+
+```{r}
+meancounts$log2fc <- log2(meancounts$treated.mean/ meancounts$control.mean)
+head(meancounts)
+```
+
+To remove zero values
+
+```{r}
+zero.vals <- which(meancounts[,1:2] == 0, arr.ind = TRUE)
+to.rm <- unique(zero.vals[,1])
+mycounts <- meancounts[-to.rm,]
+head(mycounts)
+```
+
+**Q7.** What is the purpose of the `arr.ind` argument in the **which()** function call above? Why would we then take the first column of the output and need to call the **unique()** function?
+
+The arr.ind=TRUE argument returns both the row and column indices where there are TRUE values. So it tells us which genes (rows) and samples (columns) have zero counts.
+
+Overexpressed and underexpressed genes
+
+**Q8.** Using the `up.ind` vector above can you determine how many up regulated genes we have at the greater than 2 fc level?
+
+```{r}
+up.ind <- mycounts$log2fc > 2
+sum(up.ind, na.rm=TRUE)
+```
+
+**Q9.** Using the `down.ind` vector above can you determine how many down regulated genes we have at the greater than 2 fc level?
+
+```{r}
+down.ind <- mycounts$log2fc < (-2)
+sum(down.ind, na.rm=TRUE)
+```
+
+**Q10.** Do you trust these results? Why or why not?
+
+I don't. Because the analysis above is based on fold change. The fold change can be large without being statistically significant. And we haven't done anything to determine whether the differences are significant.
+
+# DESeq2 analysis
+
+First step, loading the library
+
+```{r}
+library(DESeq2)
+```
+
+```{r}
+citation('DESeq2')
+```
+
+## Import data
+
+Let's generate the specific object that DESeq2 needs:
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = counts, colData = metadata, design = ~dex)
+dds
+```
+
+```{r}
+dds <- DESeq(dds)
+```
+
+## DESeq analysis
+
+```{r}
+res <- results(dds)
+```
+
+```{r}
+summary(res, alpha = 0.05)
+```
+
+# Adding annotation data
+
+```{r}
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+```
+
+```{r}
+columns(org.Hs.eg.db)
+```
+
+```{r}
+res$symbol <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), # Our genenames
+                     keytype="ENSEMBL",        # The format of our genenames
+                     column="SYMBOL",          # The new format we want to add
+                     multiVals="first")
+
+head(res)
+```
+
+**Q11.** Run the **mapIds()** function two more times to add the Entrez ID and UniProt accession and GENENAME as new columns called `res$entrez`, `res$uniprot` and `res$genename`.
+
+```{r}
+res$entrez <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res),
+                     column="ENTREZID",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+
+res$uniprot <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res),
+                     column="UNIPROT",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+
+res$genename <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res),
+                     column="GENENAME",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+
+head(res)
+```
+
+Arrange and view the results by the adjusted p-value
+
+```{r}
+ord <- order( res$padj )
+#View(res[ord,])
+head(res[ord,])
+```
+
+# Data visualization
+
+## Volcano plots
+
+```{r}
+plot( res$log2FoldChange,  -log(res$padj), 
+      xlab="Log2(FoldChange)",
+      ylab="-Log(P-value)")
+```
+
+Add some guidelines and color highlighting genes that have padj\<0.05 and the absolute log2FoldChange\>2
+
+```{r}
+plot( res$log2FoldChange,  -log(res$padj), 
+ ylab="-Log(P-value)", xlab="Log2(FoldChange)")
+
+# Add some cut-off lines
+abline(v=c(-2,2), col="darkgray", lty=2)
+abline(h=-log(0.05), col="darkgray", lty=2)
+```
+
+Color the points
+
+```{r}
+# Setup our custom point color vector 
+mycols <- rep("gray", nrow(res))
+mycols[ abs(res$log2FoldChange) > 2 ]  <- "red" 
+
+inds <- (res$padj < 0.01) & (abs(res$log2FoldChange) > 2 )
+mycols[ inds ] <- "blue"
+
+# Volcano plot with custom colors 
+plot( res$log2FoldChange,  -log(res$padj), 
+ col=mycols, ylab="-Log(P-value)", xlab="Log2(FoldChange)" )
+
+# Cut-off lines
+abline(v=c(-2,2), col="gray", lty=2)
+abline(h=-log(0.1), col="gray", lty=2)
+```
+
+Add the more understandable gene symbol names to the full results object res
+
+```{r}
+library(EnhancedVolcano)
+```
+
+```{r}
+x <- as.data.frame(res)
+
+EnhancedVolcano(x,
+    lab = x$symbol,
+    x = 'log2FoldChange',
+    y = 'pvalue')
+```
